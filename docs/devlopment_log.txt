@@ -13,10 +13,11 @@
     - Confirmed CNR search uses a POST request.
     - Identified required payload fields: p, cino, fcaptcha_code, ajax_req, and app_token.
     - Created an ECourtsScraper class using requests.Session().
-    - Added an initial GET request to establish an HTTP session.
+    - Added initial GET requests to establish a session and load Case Status, which provides app_token.
 
 4. Initial CAPTCHA and Token Request
     - Identified the casestatus/getCaptcha endpoint.
+    - Matched the portal's AJAX headers and included the Case Status app_token in the request.
     - Confirmed the request method is POST.
     - Observed a JSON response containing app_token and div_captcha.
     - Implemented a preliminary Python function to parse the JSON response.
