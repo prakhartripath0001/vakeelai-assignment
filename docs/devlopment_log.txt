@@ -1,0 +1,26 @@
+1. Project Setup
+    - Created the project folder and initial file structure.
+    - Set up Python environment and installed required dependencies.
+    - Initialized FastAPI backend.
+
+2. MySQL Database Setup
+    - Installed and configured MySQL.
+    - Created the vakeelai_db database.
+    - Connected MySQL with FastAPI using SQLAlchemy.
+    - Resolved database connection issues related to credentials and configuration.
+
+3. Courts HTTP Session Setup
+    - Confirmed CNR search uses a POST request.
+    - Identified required payload fields: p, cino, fcaptcha_code, ajax_req, and app_token.
+    - Created an ECourtsScraper class using requests.Session().
+    - Added an initial GET request to establish an HTTP session.
+
+4. Initial CAPTCHA and Token Request
+    - Identified the casestatus/getCaptcha endpoint.
+    - Confirmed the request method is POST.
+    - Observed a JSON response containing app_token and div_captcha.
+    - Implemented a preliminary Python function to parse the JSON response.
+
+5. Token Parsing Test
+    - Created tests/test_ecourts.py.
+    - Added a unit test for parsing app_token and CAPTCHA HTML.
