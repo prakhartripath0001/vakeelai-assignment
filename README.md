@@ -60,7 +60,7 @@ Click **Load CAPTCHA** to create a cookie-bearing eCourts session. The app obtai
 - **CNR**: 16 alphanumeric characters, such as `DLND020000602007`.
 - **Case Number**: select the court hierarchy and provide the case number, registration year and CAPTCHA.
 
-The scraper follows the portal's AJAX request flow: it keeps the same `requests.Session` cookies, carries the current `app_token`, and posts to `cnr_status/searchByCNR/` or `casestatus/submitCaseNo`. It also calls the portal's `fillDistrict`, `fillcomplex`, `fillCourtEstablishment` and `fillCaseType` endpoints for the dependent selections. Portal HTML is returned as structured text, tables and safe HTTP(S) links rather than executable markup.
+The scraper follows the portal's AJAX request flow: it keeps the same `requests.Session` cookies, carries the current `app_token`, reads the portal's current AJAX headers from its loaded helper script rather than relying on stale hard-coded values, and posts to `cnr_status/searchByCNR/` or `casestatus/submitCaseNo`. It also calls the portal's `fillDistrict`, `fillcomplex`, `fillCourtEstablishment` and `fillCaseType` endpoints for the dependent selections. Portal HTML is returned as structured text, tables and safe HTTP(S) links rather than executable markup.
 
 CAPTCHA challenges are intentional portal protections. The application displays and submits the user's answer; it does not recognize, solve or bypass CAPTCHA. Public portal availability, CAPTCHA validation and the completeness of case/order records remain controlled by eCourts.
 

@@ -5,7 +5,6 @@ import requests
 from bs4 import BeautifulSoup
 
 BASE_URL = "https://services.ecourts.gov.in/ecourtindia_v6/"
-AJAX_DELIMITER = "mbcngf46"
 
 
 class ECourtsScraper:
@@ -17,6 +16,7 @@ class ECourtsScraper:
         self.case_status_url: str | None = None
         self.app_token: str | None = None
         self.captcha_image_url: str | None = None
+        self.ajax_headers: dict[str, str] = {}
         self.state_options: list[dict[str, str]] = []
 
     def get_captcha_and_token(self) -> dict[str, str | bool | None]:
@@ -38,6 +38,9 @@ class ECourtsScraper:
         case_status_response.raise_for_status()
         self.case_status_url = case_status_response.url
         case_status_page = BeautifulSoup(case_status_response.text, "html.parser")
+        self.ajax_headers = self._get_ajax_headers(
+            case_status_page, case_status_response.url
+        )
         self.state_options = self._parse_options(
             str(case_status_page.select_one("#sess_state_code") or "")
         )
@@ -48,6 +51,7 @@ class ECourtsScraper:
         if token_input is None or not token_input.get("value"):
             raise RuntimeError("The eCourts Case Status page does not contain app_token.")
 
+        base_url_parts = urlparse(self.base_url)
         response = self.session.post(
             self.base_url,
             params={"p": "casestatus/getCaptcha"},
@@ -60,8 +64,7 @@ class ECourtsScraper:
                 "Accept": "application/json, text/javascript, */*; q=0.01",
                 "Referer": case_status_response.url,
                 "Origin": f"{base_url_parts.scheme}://{base_url_parts.netloc}",
-                "delimeter": AJAX_DELIMITER,
-                "Xgfgftr465": AJAX_DELIMITER,
+                **self.ajax_headers,
             },
             timeout=30,
         )
@@ -210,6 +213,8 @@ class ECourtsScraper:
     def _post_ajax(self, endpoint: str, fields: dict[str, str]) -> dict[str, object]:
         if self.app_token is None:
             raise RuntimeError("Start an eCourts session before making a portal request.")
+        if not self.ajax_headers:
+            raise RuntimeError("The eCourts AJAX request headers were not initialized.")
 
         base_url_parts = urlparse(self.base_url)
         response = self.session.post(
@@ -227,8 +232,7 @@ class ECourtsScraper:
                     self.base_url, "?p=casestatus/index"
                 ),
                 "Origin": f"{base_url_parts.scheme}://{base_url_parts.netloc}",
-                "delimeter": AJAX_DELIMITER,
-                "Xgfgftr465": AJAX_DELIMITER,
+                **self.ajax_headers,
             },
             timeout=30,
         )
@@ -240,6 +244,52 @@ class ECourtsScraper:
         if isinstance(rotated_token, str) and rotated_token:
             self.app_token = rotated_token
         return data
+
+    def _get_ajax_headers(
+        self, page: BeautifulSoup, page_url: str
+    ) -> dict[str, str]:
+        """Read the portal's per-page AJAX header values from its loaded helper."""
+        script_tag = page.select_one('script[src*="components.js"]')
+        if script_tag is None or not script_tag.get("src"):
+            raise RuntimeError("The eCourts page does not load its AJAX helper script.")
+
+        script_url = urljoin(page_url, script_tag["src"])
+        if urlparse(script_url).netloc != urlparse(self.base_url).netloc:
+            raise RuntimeError("The eCourts AJAX helper points to an unexpected host.")
+        response = self.session.get(
+            script_url,
+            headers={"Referer": page_url},
+            timeout=30,
+        )
+        response.raise_for_status()
+        helper_source = response.text
+        helper_start = helper_source.find("function ajaxCall(")
+        helper_end = helper_source.find("function ajaxCallNormal", helper_start)
+        if helper_start < 0:
+            raise RuntimeError("The eCourts AJAX helper does not define ajaxCall.")
+        ajax_call_source = helper_source[
+            helper_start : helper_end if helper_end > helper_start else None
+        ]
+        delimiter_match = re.search(
+            r"""var\s+delimeter\s*=\s*["']([^"']+)["']""",
+            ajax_call_source,
+        )
+        header_names = re.findall(
+            r"""["']([A-Za-z0-9]+)["']\s*:\s*delimeter""",
+            ajax_call_source,
+        )
+        if (
+            delimiter_match is None
+            or len(header_names) < 2
+            or header_names[0].lower() != "delimeter"
+        ):
+            raise RuntimeError("The eCourts AJAX helper has an unsupported header format.")
+
+        delimiter = delimiter_match.group(1)
+        return {
+            "delimeter": delimiter,
+            header_names[1]: delimiter,
+        }
 
     def _update_captcha_image(self, captcha_html: object) -> None:
         self.captcha_image_url = self._captcha_image_url(captcha_html, self.base_url)
