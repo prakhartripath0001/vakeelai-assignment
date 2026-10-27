@@ -53,6 +53,27 @@ FastAPI serves the generated `frontend/dist` application at `/` and its bundled 
 
 No database or environment file is required. Portal sessions are held in memory for 15 minutes; restarting the server expires them.
 
+## Docker
+
+Docker and Docker Compose are supported. The root image is a multi-stage build that compiles React and packages the result with FastAPI:
+
+```bash
+docker build -t vakeelai .
+docker run --rm -p 8000:8000 vakeelai
+```
+
+Open [http://localhost:8000](http://localhost:8000); the API docs are at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+To run the frontend and backend as separate containers, from the repository root run:
+
+```bash
+docker compose up --build
+```
+
+Open [http://localhost:8080](http://localhost:8080). Nginx serves the frontend and proxies `/api` and `/health` to FastAPI. The standalone frontend image can use a different backend host by setting `BACKEND_HOST` to `hostname:port`. The standalone API image can be built with `docker build -f backend/Dockerfile -t vakeelai-backend .`; it serves the API and `/docs` (the React app is served only by the root combined image or the separate frontend container).
+
+Each image runs as a non-root user where applicable and includes a health check. Docker build contexts exclude `.env` files; pass any future runtime secrets through the deployment platform instead of baking them into an image. Backend container dependencies are kept in `backend/requirements.txt`, separate from the broader development environment in `requirements.txt`.
+
 ## Case scraper
 
 Click **Load CAPTCHA** to create a cookie-bearing eCourts session. The app obtains the portal's current token and CAPTCHA image, then exposes the eCourts' own state, district, complex, establishment and case-type options. Enter the CAPTCHA shown and search by:
@@ -85,6 +106,8 @@ API: `POST /api/drafts`.
 pytest -q
 ```
 
+For a clean developer/CI install, use `python -m pip install -r requirements-dev.txt`.
+
 The unit tests mock eCourts responses and require no network connection. An optional live CAPTCHA smoke test is available with:
 
 ```bash
@@ -104,3 +127,5 @@ The live test only checks whether eCourts returns a session token and CAPTCHA ma
 ## Deployment
 
 Build the React frontend during deployment with `cd frontend && npm ci && npm run build`, then start FastAPI with `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. Configure outbound HTTPS access to eCourts. Use a single application worker unless a shared session store is added; the portal session registry is in process memory.
+
+GitHub Actions in `.github/workflows/ci-cd.yml` runs Python tests and linting on Python 3.10 and 3.13, builds the frontend, and verifies all three Docker images for pull requests. Pushes to `main` and version tags (`v*`) publish the combined, backend, and frontend images to GitHub Container Registry (GHCR). Enable package publishing for the repository if required by its GitHub organization settings. This workflow publishes deployable images; automatic rollout to a hosting provider requires that provider and deployment credentials to be configured separately.
