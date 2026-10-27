@@ -1,156 +1,17 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#12233f">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#12233f" />
+    <meta
+      name="description"
+      content="Search public district court cases and generate deterministic legal draft templates."
+    />
     <title>VakeelAI | Court tools</title>
-    <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
-    <header class="topbar">
-      <a class="brand" href="/" aria-label="VakeelAI home">
-        <span class="brand-mark">V</span>
-        <span>VakeelAI</span>
-      </a>
-      <span class="topbar-caption">Court information &amp; document templates</span>
-    </header>
-
-    <main class="page">
-      <section class="intro">
-        <p class="eyebrow">DISTRICT COURT SERVICES</p>
-        <h1>Practical tools for legal work</h1>
-        <p>Search public case information on eCourts or prepare a structured draft from your own details.</p>
-      </section>
-
-      <nav class="tabs" aria-label="Tools">
-        <button class="tab active" type="button" data-panel="cases">Case search</button>
-        <button class="tab" type="button" data-panel="drafts">Draft generator</button>
-      </nav>
-
-      <section id="cases" class="panel active" aria-labelledby="case-heading">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">ECourts portal</p>
-            <h2 id="case-heading">Search a district court case</h2>
-          </div>
-          <button id="start-session" class="button secondary" type="button">Load CAPTCHA</button>
-        </div>
-        <p class="notice">The portal requires a CAPTCHA. It is not solved or bypassed here; enter the characters shown in the image.</p>
-
-        <div class="form-grid search-layout">
-          <form id="cnr-form" class="card form-stack">
-            <h3>Search by CNR</h3>
-            <label>CNR number
-              <input name="cnr_number" required minlength="16" maxlength="16" pattern="[A-Za-z0-9]{16}" placeholder="DLND020000602007">
-            </label>
-            <label>CAPTCHA
-              <input name="captcha" required autocomplete="off" placeholder="Enter the characters shown">
-            </label>
-            <button class="button" type="submit">Search CNR</button>
-          </form>
-
-          <form id="case-form" class="card form-stack">
-            <h3>Search by case number</h3>
-            <div class="form-grid two-columns">
-              <label>State
-                <select name="state_code" required disabled>
-                  <option value="">Load CAPTCHA to load states</option>
-                </select>
-              </label>
-              <label>District
-                <select name="district_code" required disabled>
-                  <option value="">Select a state first</option>
-                </select>
-              </label>
-              <label>Court complex
-                <select name="court_complex_code" required disabled>
-                  <option value="">Select a district first</option>
-                </select>
-              </label>
-              <label>Establishment
-                <select name="establishment_code" required disabled>
-                  <option value="">Select a court complex first</option>
-                </select>
-              </label>
-              <label>Case type
-                <select name="case_type" required disabled>
-                  <option value="">Select an establishment first</option>
-                </select>
-              </label>
-              <label>Case number
-                <input name="case_number" required placeholder="233">
-              </label>
-              <label>Registration year
-                <input name="year" type="number" min="1900" max="2100" required placeholder="2024">
-              </label>
-              <label>CAPTCHA
-                <input name="captcha" required autocomplete="off" placeholder="Enter the characters shown">
-              </label>
-            </div>
-            <button class="button" type="submit">Search case number</button>
-          </form>
-        </div>
-        <div id="captcha-box" class="captcha-box" hidden>
-          <div>
-            <strong>eCourts CAPTCHA</strong>
-            <p id="captcha-message">Loading CAPTCHA image…</p>
-          </div>
-          <img id="captcha-image" alt="CAPTCHA challenge from eCourts" hidden>
-          <button id="refresh-captcha" class="button secondary" type="button">Refresh CAPTCHA</button>
-        </div>
-        <p id="case-status" class="status" role="status" aria-live="polite"></p>
-        <section id="case-results" class="results" aria-label="Case search results" hidden></section>
-      </section>
-
-      <section id="drafts" class="panel" aria-labelledby="draft-heading">
-        <p class="eyebrow">DETERMINISTIC PYTHON TEMPLATES</p>
-        <h2 id="draft-heading">Generate a legal draft</h2>
-        <p class="notice">The generator uses fixed templates and your supplied facts only. It does not use an LLM or external API.</p>
-        <form id="draft-form" class="card form-stack">
-          <div class="form-grid two-columns">
-            <label>Document type
-              <select name="document_type">
-                <option value="legal_notice">Legal notice</option>
-                <option value="civil_plaint">Civil plaint</option>
-                <option value="affidavit">Affidavit</option>
-              </select>
-            </label>
-            <label>Court / forum
-              <input name="court_name" required placeholder="Court name or forum">
-            </label>
-            <label>Petitioner / sender / deponent
-              <input name="petitioner" required>
-            </label>
-            <label>Respondent / recipient
-              <input name="respondent" required>
-            </label>
-            <label>Draft date
-              <input name="date" required placeholder="DD Month YYYY">
-            </label>
-            <label>Advocate name
-              <input name="advocate_name" required>
-            </label>
-            <label>Notice response period (days)
-              <input name="notice_period_days" type="number" min="1" max="90" value="15" required>
-            </label>
-          </div>
-          <label>Material facts
-            <textarea name="facts" rows="5" minlength="20" maxlength="10000" required placeholder="Enter the relevant facts in your own words."></textarea>
-          </label>
-          <label>Jurisdiction / context
-            <textarea name="jurisdiction" rows="3" required placeholder="Explain the forum or legal context to be reviewed by counsel."></textarea>
-          </label>
-          <label>Relief / action sought
-            <textarea name="relief_sought" rows="3" required placeholder="Describe the requested relief or action."></textarea>
-          </label>
-          <button class="button" type="submit">Generate draft</button>
-        </form>
-        <p id="draft-status" class="status" role="status" aria-live="polite"></p>
-        <section id="draft-results" class="results" aria-label="Generated draft" hidden></section>
-      </section>
-      <footer>eCourts data is retrieved on demand from the public portal. Verify case details and have all draft content reviewed by an advocate before relying on or filing it.</footer>
-    </main>
-    <script src="/static/app.js" defer></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

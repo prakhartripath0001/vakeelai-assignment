@@ -1,27 +1,55 @@
 # VakeelAI assignment
 
-A Python/FastAPI application with two tools:
+A React/Vite frontend connected to a Python/FastAPI backend, with two tools:
 
 1. A district-court eCourts scraper for CNR and Case Number searches.
 2. A deterministic legal-draft template generator for legal notices, civil plaints and affidavits.
 
-The browser UI is served by FastAPI, so the frontend and backend run together. Draft generation uses local Python templates only; it does not call an LLM or an external API.
+The React application lives in `frontend/`; FastAPI serves its production build and provides the JSON API. Draft generation uses local Python templates only; it does not call an LLM or an external API.
 
 ## Requirements
 
 - Python 3.10 or newer
+- Node.js 20.19+ or 22.12+ with npm
 - Network access to `services.ecourts.gov.in` for case searches
 
-## Run locally
+## Run locally in development
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+```
+
+Start the Python API in one terminal:
+
+```bash
 uvicorn backend.main:app --reload
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000). FastAPI's interactive API documentation is at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+In another terminal, install the React app dependencies and start Vite:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the Vite URL (normally [http://localhost:5173](http://localhost:5173)). Vite proxies `/api` requests to FastAPI on port `8000`. FastAPI's interactive API documentation remains at [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs).
+
+## Production build
+
+Build React before running the production FastAPI app:
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
+```
+
+FastAPI serves the generated `frontend/dist` application at `/` and its bundled assets at `/assets`. The build output and `node_modules` are ignored by Git.
 
 No database or environment file is required. Portal sessions are held in memory for 15 minutes; restarting the server expires them.
 
@@ -75,4 +103,4 @@ The live test only checks whether eCourts returns a session token and CAPTCHA ma
 
 ## Deployment
 
-Run the same `uvicorn backend.main:app --host 0.0.0.0 --port $PORT` command on a Python hosting service. Configure outbound HTTPS access to eCourts. Use a single application worker unless a shared session store is added; the portal session registry is in process memory.
+Build the React frontend during deployment with `cd frontend && npm ci && npm run build`, then start FastAPI with `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`. Configure outbound HTTPS access to eCourts. Use a single application worker unless a shared session store is added; the portal session registry is in process memory.

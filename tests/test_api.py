@@ -19,8 +19,12 @@ def test_health_endpoint():
 def test_frontend_is_served():
     response = client.get("/")
 
-    assert response.status_code == 200
-    assert "VakeelAI" in response.text
+    if (main.FRONTEND_BUILD_DIR / "index.html").is_file():
+        assert response.status_code == 200
+        assert "VakeelAI" in response.text
+    else:
+        assert response.status_code == 503
+        assert "npm run build" in response.json()["detail"]
 
 
 def test_case_search_rejects_malformed_cnr():

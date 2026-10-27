@@ -18,6 +18,7 @@ from backend.scraper.ecourts import ECourtsScraper
 logger = logging.getLogger(__name__)
 SESSION_TTL_SECONDS = 15 * 60
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+FRONTEND_BUILD_DIR = FRONTEND_DIR / "dist"
 
 
 @dataclass
@@ -59,7 +60,11 @@ app = FastAPI(
     description="District court case search and deterministic legal draft templates.",
     version="1.0.0",
 )
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+app.mount(
+    "/assets",
+    StaticFiles(directory=FRONTEND_BUILD_DIR / "assets", check_dir=False),
+    name="assets",
+)
 _portal_sessions: dict[str, PortalSession] = {}
 _portal_sessions_lock = threading.Lock()
 
@@ -106,7 +111,13 @@ def _portal_error(error: Exception) -> HTTPException:
 
 @app.get("/", include_in_schema=False)
 def home() -> FileResponse:
-    return FileResponse(FRONTEND_DIR / "index.html")
+    entrypoint = FRONTEND_BUILD_DIR / "index.html"
+    if not entrypoint.is_file():
+        raise HTTPException(
+            status_code=503,
+            detail="React frontend is not built. Run `cd frontend && npm install && npm run build`.",
+        )
+    return FileResponse(entrypoint)
 
 
 @app.get("/health")
