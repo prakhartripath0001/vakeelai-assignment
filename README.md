@@ -70,7 +70,9 @@ To run the frontend and backend as separate containers, from the repository root
 docker compose up --build
 ```
 
-Open [http://localhost:8080](http://localhost:8080). Nginx serves the frontend and proxies `/api` and `/health` to FastAPI. The standalone frontend image can use a different backend host by setting `BACKEND_HOST` to `hostname:port`. The standalone API image can be built from `backend/` with `docker build -t vakeelai-backend ./backend`; it serves the API and `/docs` (the React app is served only by the root combined image or the separate frontend container). For Render, set the service's Root Directory to `backend` and use its `Dockerfile`; this keeps the build context aligned with the Dockerfile's paths.
+Open [http://localhost:8080](http://localhost:8080). Nginx serves the frontend and proxies `/api` and `/health` to FastAPI. The standalone frontend image can use a different backend host by setting `BACKEND_HOST` to `hostname:port`. The standalone API image can be built from `backend/` with `docker build -t vakeelai-backend ./backend`; it serves the API and `/docs` (the React app is served only by the root combined image or the separate frontend container).
+
+For a single Render web service that serves both the React app and API, leave **Root Directory** empty (repository root) and set **Dockerfile Path** to `Dockerfile`. This uses the root multi-stage Dockerfile, which builds `frontend/dist` and includes it in the runtime image. Do not use `backend/Dockerfile` for this deployment; it builds an API-only image and does not contain the React frontend.
 
 Each image runs as a non-root user where applicable and includes a health check. Docker build contexts exclude `.env` files; pass any future runtime secrets through the deployment platform instead of baking them into an image. Backend container dependencies are kept in `backend/requirements.txt`, separate from the broader development environment in `requirements.txt`.
 
