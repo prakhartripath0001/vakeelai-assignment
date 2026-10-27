@@ -4,12 +4,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
-COPY backend/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt \
     && addgroup --system app \
     && adduser --system --ingroup app app
 
-COPY backend/ ./backend/
+COPY . ./backend/
 
 USER app
 EXPOSE 8000
