@@ -114,12 +114,53 @@ function Field({ label, children }) {
   );
 }
 
+function CaptchaChallenge({
+  sessionId,
+  imageAvailable,
+  imageFailed,
+  version,
+  disabled,
+  onRefresh,
+  onImageError,
+}) {
+  if (!sessionId) return null;
+
+  return (
+    <div className="captcha-challenge">
+      {imageAvailable && !imageFailed ? (
+        <img
+          src={`/api/ecourts/session/${encodeURIComponent(
+            sessionId,
+          )}/captcha?version=${version}`}
+          alt="CAPTCHA challenge from eCourts"
+          onError={onImageError}
+        />
+      ) : (
+        <p role="status">
+          {imageFailed
+            ? "The CAPTCHA image could not be loaded. Refresh the CAPTCHA to try again."
+            : "The portal did not provide a CAPTCHA image. Refresh or try again later."}
+        </p>
+      )}
+      <button
+        className="button secondary"
+        disabled={disabled}
+        onClick={onRefresh}
+        type="button"
+      >
+        Refresh CAPTCHA
+      </button>
+    </div>
+  );
+}
+
 export default function App() {
   const [activePanel, setActivePanel] = useState("cases");
   const [portalSessionId, setPortalSessionId] = useState("");
   const [caseOptions, setCaseOptions] = useState(EMPTY_CASE_OPTIONS);
   const [caseSelection, setCaseSelection] = useState(EMPTY_CASE_SELECTION);
   const [captchaImageAvailable, setCaptchaImageAvailable] = useState(false);
+  const [captchaImageFailed, setCaptchaImageFailed] = useState(false);
   const [captchaVersion, setCaptchaVersion] = useState(0);
   const [caseStatus, setCaseStatus] = useState({ message: "", kind: "" });
   const [caseBusy, setCaseBusy] = useState(false);
@@ -162,6 +203,7 @@ export default function App() {
       });
       setCaseSelection(EMPTY_CASE_SELECTION);
       setCaptchaImageAvailable(data.captcha_image_available);
+      setCaptchaImageFailed(false);
       setCaptchaVersion((version) => version + 1);
       setCaseResults(null);
       updateCaseStatus(data.notice, "success");
@@ -184,6 +226,7 @@ export default function App() {
         { method: "POST" },
       );
       setCaptchaImageAvailable(data.captcha_image_available);
+      setCaptchaImageFailed(false);
       setCaptchaVersion((version) => version + 1);
       updateCaseStatus("CAPTCHA refreshed. Enter the new characters.", "success");
     } catch (error) {
@@ -310,6 +353,7 @@ export default function App() {
       });
       setCaseResults(data);
       setCaptchaImageAvailable(Boolean(data.captcha_image_available));
+      setCaptchaImageFailed(false);
       setCaptchaVersion((version) => version + 1);
       form.reset();
       updateCaseStatus("Portal response received.", "success");
@@ -344,6 +388,7 @@ export default function App() {
       });
       setCaseResults(data);
       setCaptchaImageAvailable(Boolean(data.captcha_image_available));
+      setCaptchaImageFailed(false);
       setCaptchaVersion((version) => version + 1);
       form.reset();
       updateCaseStatus("Portal response received.", "success");
@@ -462,8 +507,8 @@ export default function App() {
               </button>
             </div>
             <p className="notice">
-              The portal requires a CAPTCHA. It is not solved or bypassed here; enter the
-              characters shown in the image.
+              Load a CAPTCHA session first. Enter the characters shown in the image directly
+              below the CAPTCHA field in either search form.
             </p>
 
             <div className="form-grid search-layout">
@@ -482,6 +527,15 @@ export default function App() {
                 <Field label="CAPTCHA">
                   <input name="captcha" required autoComplete="off" placeholder="Enter characters" />
                 </Field>
+                <CaptchaChallenge
+                  sessionId={portalSessionId}
+                  imageAvailable={captchaImageAvailable}
+                  imageFailed={captchaImageFailed}
+                  version={captchaVersion}
+                  disabled={caseBusy}
+                  onRefresh={handleRefreshCaptcha}
+                  onImageError={() => setCaptchaImageFailed(true)}
+                />
                 <button className="button" disabled={caseBusy} type="submit">
                   Search CNR
                 </button>
@@ -551,40 +605,21 @@ export default function App() {
                     />
                   </Field>
                 </div>
+                <CaptchaChallenge
+                  sessionId={portalSessionId}
+                  imageAvailable={captchaImageAvailable}
+                  imageFailed={captchaImageFailed}
+                  version={captchaVersion}
+                  disabled={caseBusy}
+                  onRefresh={handleRefreshCaptcha}
+                  onImageError={() => setCaptchaImageFailed(true)}
+                />
                 <button className="button" disabled={caseBusy} type="submit">
                   Search case number
                 </button>
               </form>
             </div>
 
-            {portalSessionId && (
-              <div className="captcha-box">
-                <div>
-                  <strong>eCourts CAPTCHA</strong>
-                  <p>
-                    {captchaImageAvailable
-                      ? "Enter the characters shown into the selected search form."
-                      : "The portal did not provide an image. Refresh or try again later."}
-                  </p>
-                </div>
-                {captchaImageAvailable && (
-                  <img
-                    src={`/api/ecourts/session/${encodeURIComponent(
-                      portalSessionId,
-                    )}/captcha?version=${captchaVersion}`}
-                    alt="CAPTCHA challenge from eCourts"
-                  />
-                )}
-                <button
-                  className="button secondary"
-                  disabled={caseBusy}
-                  onClick={handleRefreshCaptcha}
-                  type="button"
-                >
-                  Refresh CAPTCHA
-                </button>
-              </div>
-            )}
             <Status {...caseStatus} />
             <CaseResults data={caseResults} />
           </section>
